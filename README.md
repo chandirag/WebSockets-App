@@ -15,11 +15,11 @@ This application consists of a Master Client, a server, and multiple Minion Clie
 2.  Open the `index.html` file in any web browser. This will launch the Master Client interface.
 3.  Run the server and Minion Clients using one of the two options below:
 
-        a. Using Node.js scripts (with `concurrently`)
-        <hr>
+    a. Using Node.js scripts (with `concurrently`)
+    <hr>
 
-        - Easier to get started.
-        - Difficult to seperate console logs for each process.
+    - Easier to get started.
+    - Difficult to seperate console logs for each process.
 
         <br>
 
@@ -27,17 +27,17 @@ This application consists of a Master Client, a server, and multiple Minion Clie
         npm run dev
         ```
 
-        b. Running each script individually (in separate terminals)
-        <hr>
+    b. Running each script individually (in separate terminals)
+    <hr>
 
-        - Easier to see console logs for each process.
-        - Run Server: From the root folder:
+    - Easier to see console logs for each process.
+    - Run Server: From the root folder:
 
             ```
             cd server && node index.js
             ```
 
-        - Run Minion Clients: from the root folder:
+    - Run Minion Clients: from the root folder:
 
             ```
             cd server && node mclient1.js
@@ -58,4 +58,4 @@ This application consists of a Master Client, a server, and multiple Minion Clie
 <hr>
 
 <!-- Add image -->
-<img src="images/MasterClient.png" alt="Master Client" width="600"/>
+<img src="images/MasterClient.png" alt="Master Client" />
