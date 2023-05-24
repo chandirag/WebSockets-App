@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Language -->
+    <meta charset="utf-8">
+    <title>Master Client</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1 id="pageTitle">Master Client</h1>
+        <p id="description">The <span class="client-type-span">master client</span> is a web-based client that allows the user to select a
+             <span class="client-type-span">minion client</span> and send messages to it. The connected <span class="client-type-span">minion clients</span> 
+             are displayed in the dropdown menu. If the dropdown menu is empty, it means that no <span class="client-type-span">minion clients</span>
+             are currently connected. 
+
+        </p>
+        <div class="connection-status">
+            <h4 id="connectionStatusText">Connection Status:</h4>
+            <p id="connectionStatus"></p>
+        </div>
+        <div class="input-container">
+            <input type="text" id="message" placeholder="Enter message here">
+        </div>
+        <div class="button-container">
+            <select id="minionClients"></select>
+            <button id="sendButton">Send</button>
+        </div>
+        <div class="responses">
+            <p id="responses"></p>
+        </div>
+        <div class="balance-sum">
+            <p id="balanceSum"></p>
+        </div>
+    </div>   
+
+    <script>
+        function connectWebSocket() {
+            // Connect to the WebSocket server
+            const ws = new WebSocket('ws://localhost:8080');
+            const connectionStatusElement = document.getElementById('connectionStatus');
+
+            // Update the connection status in the HTML
+            function updateConnectionStatus(status) {
+                connectionStatusElement.textContent = status;
+                
+                // Remove previous status classes
+                connectionStatusElement.classList.remove('connected', 'disconnected', 'error');
+
+                // Add the appropriate class based on the status
+                if (status === 'Connected to Web Socket server.') {
+                    connectionStatusElement.classList.add('connected');
+                } else if (status === 'Connection closed. Attempting to reconnect...' || status === 'Error connecting to server. Server may be down. Retrying in 2 seconds...') {
+                    connectionStatusElement.classList.add('disconnected');
+                }
+            }
+
+            // Listen for connection
+            ws.addEventListener('open', () => {
+                ws.send(JSON.stringify({
+                    messageType: 'connection',
+                    type: 'master',
+                }));
+                console.log(new (Date), 'Connected to Web Socket server.');
+                updateConnectionStatus('Connected to Web Socket server.');
+            });
+
+            // When send is clicked, send details to server
+            document.getElementById('sendButton').addEventListener('click', function () {
+                const selectedMinion = document.getElementById('minionClients').value;
+                const message = document.getElementById('message').value;
+
+                response = JSON.stringify({
+                    messageType: 'message',
+                    type: 'master',
+                    targetMinion: selectedMinion,
+                    message: message
+                });
+                ws.send(response);
+            });
+
+            // Populate dropdown menu based on type of clients connected
+            ws.addEventListener('message', (message) => {
+                const data = JSON.parse(message.data);
+                if (data.messageType === 'connected-clients') {
+                    const minionClients = document.getElementById('minionClients');
+                    minionClients.innerHTML = ''; // clear existing options
+
+                    // Add options for each type of minion client
+                    const connectedMinions = data.connectedClients;
+                    Object.keys(connectedMinions).forEach((type, index) => {
+                        const count = connectedMinions[type];
+                        if (count > 0) {
+                            const minionOption = document.createElement('option');
+                            minionOption.value = index + 1;
+                            minionOption.text = `Minion ${type}`;
+                            minionClients.appendChild(minionOption);
+                        }
+                    });
+
+                    // Add 'ALL' option if at least one minion type is connected
+                    const minionTypes = Object.keys(connectedMinions);
+                    if (minionTypes.length > 0) {
+                        const allOption = document.createElement('option');
+                        allOption.value = '0';
+                        allOption.text = 'ALL';
+                        minionClients.appendChild(allOption);
+                    }
+                }
+            });
+
+            // Listen for server messages
+            ws.addEventListener('message', (message) => {
+                const data = JSON.parse(message.data);
+                if (data.messageType === 'response') {
+                    const responsesElement = document.getElementById('responses');
+                    const br = document.createElement('br');
+                    responsesElement.appendChild(br);
+                    responsesElement.appendChild(document.createTextNode(data.message));
+                }
+            });
+
+            // Listen for server messages containing the sum of the balances of all connected minion clients
+            ws.addEventListener('message', (message) => {
+                const data = JSON.parse(message.data);
+                if (data.messageType === 'balance-sum') {
+                    const balanceSumElement = document.getElementById('balanceSum');
+                    balanceSumElement.textContent = `Sum of balances: ${data.balanceSum}`;
+                }
+            });
+
+            ws.addEventListener('error', (error) => {
+                console.error(new Date(), 'Error connecting to server. Server may be down. Retrying in 2 seconds...');
+                updateConnectionStatus('Error connecting to server. Server may be down. Retrying in 2 seconds...');
+            });
+
+            ws.addEventListener('close', (event) => {
+                if (!event.wasClean) {
+                    console.log(new Date(), 'Connection closed. Attempting to reconnect...');
+                    updateConnectionStatus('Connection closed. Attempting to reconnect...');
+                    setTimeout(connectWebSocket, 2000); // Wait for 2 seconds before attempting to reconnect
+                }
+            });
+        }
+
+        connectWebSocket();
+    </script>
+</body>
+
+</html>
